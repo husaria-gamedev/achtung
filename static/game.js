@@ -16,10 +16,12 @@ const ctx = canvas.getContext("2d");
 let posX = 500;
 let posY = 500;
 let angle = 0;
-let SPEED = 5;
-let ANGLE_SPEED = 0.2;
+let SPEED = 4;
+let ANGLE_SPEED = 0.1;
 
 addEventListener("keydown", (event) => {
+    // document.body.requestFullscreen();
+
     if (event.key == "ArrowLeft")
         direction = "left"
     if (event.key == "ArrowRight")
@@ -97,3 +99,5 @@ socket.addEventListener("message", (event) => {
   console.log("Message from server ", event.data + " ");
 });
 
+
+console.log("requestse");
