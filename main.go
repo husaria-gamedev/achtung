@@ -21,6 +21,12 @@ const (
 	Right Direction = "right"
 )
 
+type PlayerState struct {
+	PosX  float64 // Player's X position
+	PosY  float64 // Player's Y position
+	Angle float64 // Player's angle of orientation
+}
+
 var GAME_STATE GameState
 
 var upgrader = websocket.Upgrader{} // use default options
@@ -58,12 +64,12 @@ func handle_websocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// fmt.Printf("Received message from %s: %s\n", connID, string(message))
+		fmt.Printf("Received message from %s: %s\n", connID, string(message))
 	}
 }
 
 func main() {
-	fs := http.FileServer(http.Dir("./client"))
+	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fs)
 	http.HandleFunc("/websocket", handle_websocket)
 
