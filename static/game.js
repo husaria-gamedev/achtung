@@ -1,8 +1,13 @@
-const FPS = 30;
+const FPS = 50;
 const WINDOW_WIDTH = window.innerWidth;
 const WINDOW_HEIGHT = window.innerHeight;
 const BORDER = 5;
 const CANVAS_EDGE = Math.min(WINDOW_HEIGHT, WINDOW_WIDTH) - BORDER * 2;
+const DIRECTION_DICT = {
+    left: "l",
+    right: "r",
+    none: "n",
+}
 
 let direction = "none";
 let paused = false;
@@ -15,6 +20,7 @@ const ctx = canvas.getContext("2d");
 
 let posX = 500;
 let posY = 500;
+let breadth = 4;
 let angle = 0;
 let SPEED = 4;
 let ANGLE_SPEED = 0.1;
@@ -66,17 +72,18 @@ function updatePosition() {
 function tick() {
     ctx.fillStyle = "red";
     ctx.beginPath();
-    ctx.arc(posX,posY,5,0,Math.PI*2,true);
+    ctx.arc(posX,posY,breadth,0,Math.PI*2,true);
     ctx.fill();
 
-    updatePosition();
+    console.log("drawing", posX, posY);
+    // updatePosition();
 
-    ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(posX,posY,5,0,Math.PI*2,true);
-    ctx.fill();
+    // ctx.fillStyle = "yellow";
+    // ctx.beginPath();
+    // ctx.arc(posX,posY,breadth,0,Math.PI*2,true);
+    // ctx.fill();
 
-    socket.send(JSON.stringify({direction: direction}));
+    socket.send(JSON.stringify({d: DIRECTION_DICT[direction]}));
 }
 
 function init() {
@@ -91,13 +98,16 @@ console.log(window.location.host);
 const socket = new WebSocket(`ws://${window.location.host}/websocket`);
 
 
-init();
+socket.onopen = (event) => {
+    init();
 
-setInterval(tick, 1000/FPS);
+    setInterval(tick, 1000/FPS);
+};
 
-socket.addEventListener("message", (event) => {
-  console.log("Message from server ", event.data + " ");
-});
-
-
-console.log("requestse");
+socket.onmessage = (event) => {
+    data = JSON.parse(event.data)
+    if (data) {
+        posX = data[0].x;
+        posY = data[0].y;
+    }
+};
