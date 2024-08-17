@@ -29,10 +29,11 @@ const BREADTH = 4*SCALE;
 const HEAD_BREADTH = 3*SCALE;
 
 const canvas = document.getElementById("game");
+const message = document.getElementById("message");
 const ctx = canvas.getContext("2d");
 
-let lastData = [];
-let newData = [];
+let lastData = {p: []};
+let newData = {};
 
 addEventListener("keydown", (event) => {
     if (event.key == "ArrowLeft")
@@ -61,11 +62,11 @@ addEventListener("touchend", (event) => {
 });
 
 function clearHeads() {
-    lastData.forEach(p => {drawDot(p.x, p.y, colorArray[p.i], BREADTH)})
+    lastData.p.forEach(p => {drawDot(p.x, p.y, colorArray[p.i], BREADTH)})
 }
 
 function drawHeads() {
-    newData.forEach(p => {drawDot(p.x, p.y, "yellow", HEAD_BREADTH)})
+    newData.p.forEach(p => {drawDot(p.x, p.y, "yellow", HEAD_BREADTH)})
 }
 
 function drawDot(x, y, color, breadth) {
@@ -76,9 +77,17 @@ function drawDot(x, y, color, breadth) {
 }
 
 function processData() {
-    clearHeads();
-    drawHeads();
-
+    if (data.s == "starting") {
+        init();
+        message.innerHTML = "Wait for game to start...";
+        clearHeads();
+    } else if (data.s == "finished") {
+        message.innerHTML = "Game is finished";
+    } else {
+        message.innerHTML = "";
+        clearHeads();
+        drawHeads();
+    }
     lastData = newData;
 }
 
