@@ -1,3 +1,14 @@
+const colorArray = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6', 
+		  '#E6B333', '#3366E6', '#999966', '#99FF99', '#B34D4D',
+		  '#80B300', '#809900', '#E6B3B3', '#6680B3', '#66991A', 
+		  '#FF99E6', '#CCFF1A', '#FF1A66', '#E6331A', '#33FFCC',
+		  '#66994D', '#B366CC', '#4D8000', '#B33300', '#CC80CC', 
+		  '#66664D', '#991AFF', '#E666FF', '#4DB3FF', '#1AB399',
+		  '#E666B3', '#33991A', '#CC9999', '#B3B31A', '#00E680', 
+		  '#4D8066', '#809980', '#E6FF80', '#1AFF33', '#999933',
+		  '#FF3380', '#CCCC00', '#66E64D', '#4D80CC', '#9900B3', 
+		  '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
+
 const FPS = 50;
 const WINDOW_WIDTH = window.innerWidth;
 const WINDOW_HEIGHT = window.innerHeight;
@@ -9,105 +20,90 @@ const DIRECTION_DICT = {
     none: "n",
 }
 
-let direction = "none";
+let direction = "n";
 let paused = false;
 
-const WIDTH = 400;
-const HEIGHT = 400;
+const MAP_EDGE = 1000;
+const SCALE = CANVAS_EDGE/MAP_EDGE;
+const BREADTH = 4*SCALE;
+const HEAD_BREADTH = 3*SCALE;
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let posX = 500;
-let posY = 500;
-let breadth = 4;
-let angle = 0;
-let SPEED = 4;
-let ANGLE_SPEED = 0.1;
+let lastData = [];
+let newData = [];
 
 addEventListener("keydown", (event) => {
-    // document.body.requestFullscreen();
-
     if (event.key == "ArrowLeft")
-        direction = "left"
+        direction = "l"
     if (event.key == "ArrowRight")
-        direction = "right"
+        direction = "r"
 });
 
 addEventListener("keyup", (event) => {
     if (event.key == "ArrowLeft" || event.key == "ArrowRight")
-        direction = "none"
+        direction = "n"
 });
 
 addEventListener("touchstart", (event) => {
     const touch = event.targetTouches[0] || event.changedTouches[0];
 
     if (touch.clientX < WINDOW_WIDTH / 2) {
-        direction = "left";
+        direction = "l";
     } else {
-        direction = "right";
+        direction = "r";
     }
 });
 
 addEventListener("touchend", (event) => {
-    direction = "none";
+    direction = "n";
 });
 
-
-function updatePosition() {
-    let deltaX = SPEED * Math.cos(angle);
-    let deltaY = SPEED * Math.sin(angle);
-
-    // Update positions
-    posX += deltaX;
-    posY += deltaY;
-
-    if (direction == "left") {
-        angle -= ANGLE_SPEED;
-    } else if (direction == "right") {
-        angle += ANGLE_SPEED;
-    }
+function clearHeads() {
+    lastData.forEach(p => {drawDot(p.x, p.y, colorArray[p.i], BREADTH)})
 }
 
-function tick() {
-    ctx.fillStyle = "red";
+function drawHeads() {
+    newData.forEach(p => {drawDot(p.x, p.y, "yellow", HEAD_BREADTH)})
+}
+
+function drawDot(x, y, color, breadth) {
+    ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(posX,posY,breadth,0,Math.PI*2,true);
+    ctx.arc(x*SCALE,y*SCALE,breadth,0,Math.PI*2,true);
     ctx.fill();
+}
 
-    console.log("drawing", posX, posY);
-    // updatePosition();
+function processData() {
+    clearHeads();
+    drawHeads();
 
-    // ctx.fillStyle = "yellow";
-    // ctx.beginPath();
-    // ctx.arc(posX,posY,breadth,0,Math.PI*2,true);
-    // ctx.fill();
-
-    socket.send(JSON.stringify({d: DIRECTION_DICT[direction]}));
+    lastData = newData;
 }
 
 function init() {
     canvas.height = CANVAS_EDGE;
     canvas.width = CANVAS_EDGE;
-    console.log("EDGE", CANVAS_EDGE);
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, CANVAS_EDGE, CANVAS_EDGE);
 }
 
-console.log(window.location.host);
 const socket = new WebSocket(`ws://${window.location.host}/websocket`);
 
+function sendControls() {
+    socket.send(JSON.stringify({d: direction}));
+}
 
-socket.onopen = (event) => {
+socket.onopen = () => {
     init();
-
-    setInterval(tick, 1000/FPS);
+    setInterval(sendControls, 1000/FPS);
 };
 
 socket.onmessage = (event) => {
-    data = JSON.parse(event.data)
+    data = JSON.parse(event.data);
     if (data) {
-        posX = data[0].x;
-        posY = data[0].y;
+        newData = data;
+        processData();
     }
 };

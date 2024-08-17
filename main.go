@@ -28,6 +28,7 @@ const (
 )
 
 type PlayerState struct {
+	Id         int
 	PosX       float64 // Player's X position
 	PosY       float64 // Player's Y position
 	Angle      float64
@@ -39,6 +40,7 @@ type PlayerState struct {
 type PlayerStateMessage struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
+	I int     `json:"i"`
 }
 
 type DirectionMessage struct {
@@ -62,8 +64,9 @@ func addConnection(id string, conn *websocket.Conn) {
 		PosY:       200,
 		Angle:      0,
 		Speed:      3,
-		AngleSpeed: 0.1,
+		AngleSpeed: 0.07,
 		Direction:  Forward,
+		Id:         len(connections),
 	}
 	fmt.Println("New connection", id, len(connections))
 }
@@ -71,6 +74,7 @@ func addConnection(id string, conn *websocket.Conn) {
 func removeConnection(id string) {
 	fmt.Println("Deleted connection", id)
 	delete(connections, id)
+	delete(gameState, id)
 }
 
 func parseMessage(msg []byte) *DirectionMessage {
@@ -148,6 +152,7 @@ func getPlayerStateMessage(p *PlayerState) PlayerStateMessage {
 	return PlayerStateMessage{
 		X: p.PosX,
 		Y: p.PosY,
+		I: p.Id,
 	}
 }
 
@@ -172,10 +177,8 @@ func update() {
 	}
 
 	bytes, err := json.Marshal(msg)
-	fmt.Println(len(connections), msg[0])
 
 	if err != nil {
-		fmt.Println("crashing")
 		fmt.Println(err)
 		return
 	}
