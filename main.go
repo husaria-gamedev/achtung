@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/tfriedel6/canvas"
+	"github.com/tfriedel6/canvas/sdlcanvas"
 )
 
 type GameState string
@@ -22,7 +24,10 @@ const (
 type Direction string
 
 const FPS int = 30
-const Edge int = 1000
+const Edge float64 = 1000
+
+var wnd *sdlcanvas.Window
+var cv *canvas.Canvas
 
 const (
 	Left    Direction = "left"
@@ -84,8 +89,8 @@ func addConnection(id string, conn *websocket.Conn) {
 }
 
 func initPlayer(p *PlayerState) {
-	p.PosX = float64(rand.IntN(Edge-Edge/10) + int(Edge/20))
-	p.PosY = float64(rand.IntN(Edge-Edge/10) + int(Edge/20))
+	p.PosX = rand.Float64()*(Edge-Edge/10) + Edge/20
+	p.PosY = rand.Float64()*(Edge-Edge/10) + Edge/20
 	p.Angle = rand.Float64() * math.Pi * 2
 	p.Alive = true
 }
@@ -153,6 +158,11 @@ func gameLoop() {
 	}
 }
 
+func GetValue(x, y int) uint8 {
+	d := cv.GetImageData(x, y, 1, 1)
+	return d.Pix[0]
+}
+
 func updatePlayerState(p *PlayerState) {
 	if !p.Alive {
 		return
@@ -173,6 +183,11 @@ func updatePlayerState(p *PlayerState) {
 	if p.PosX < 0 || p.PosX > float64(Edge) || p.PosY < 0 || p.PosY > float64(Edge) {
 		p.Alive = false
 	}
+	v := GetValue(int(p.PosX), int(p.PosY))
+	if v != 0x0 {
+		p.Alive = false
+	}
+	drawDot(p.PosX, p.PosY)
 }
 
 func getPlayerStateMessage(p *PlayerState) PlayerStateMessage {
@@ -197,6 +212,7 @@ func getGameStateMessage() GameStateMessage {
 }
 
 func runningStateTick() {
+	wnd.StartFrame()
 	for _, p := range gameState {
 		updatePlayerState(p)
 	}
@@ -215,6 +231,21 @@ func runningStateTick() {
 			initPlayer(p)
 		}
 	}
+	wnd.FinishFrame()
+}
+
+func drawDot(x float64, y float64) {
+	cv.BeginPath()
+	cv.SetFillStyle("#fff")
+	cv.Arc(x, y, 2, 0, 2*math.Pi, false)
+	cv.Fill()
+}
+
+func initGame() {
+	wnd.StartFrame()
+	cv.SetFillStyle("#000")
+	cv.FillRect(0, 0, Edge, Edge)
+	wnd.FinishFrame()
 }
 
 func startingStateTick() {
@@ -224,6 +255,7 @@ func startingStateTick() {
 		nextStateMilis = 3 * 1000
 	}
 	if nextStateMilis < 0 {
+		initGame()
 		state = "running"
 	}
 }
@@ -264,8 +296,18 @@ func main() {
 	http.Handle("/", fs)
 	http.HandleFunc("/websocket", handle_websocket)
 
-	go gameLoop()
+	var err error
+	wnd, cv, err = sdlcanvas.CreateWindow(int(Edge), int(Edge), "Achtung!")
+	w, h := float64(cv.Width()), float64(cv.Height())
+	fmt.Println(w, h)
+
+	if err != nil {
+		panic(err)
+	}
+	defer wnd.Destroy()
 
 	fmt.Println("Listening at port 8000")
-	http.ListenAndServe(":8000", nil)
+	go http.ListenAndServe(":8000", nil)
+	// Important to have the gameLoop in the main thread bcs GL Window is not thread-safe
+	gameLoop()
 }
