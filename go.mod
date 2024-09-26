@@ -13,3 +13,5 @@ require (
 	github.com/veandco/go-sdl2 v0.4.40 // indirect
 	golang.org/x/image v0.19.0 // indirect
 )
+
+replace github.com/tfriedel6/canvas => github.com/jsierp/go-canvas v0.12.1-fix

@@ -98,7 +98,7 @@ function init() {
     ctx.fillRect(0, 0, CANVAS_EDGE, CANVAS_EDGE);
 }
 
-const socket = new WebSocket(`ws://${window.location.host}/websocket`);
+const socket = new WebSocket(`wss://${window.location.host}/websocket`);
 
 function sendControls() {
     socket.send(JSON.stringify({d: direction}));
